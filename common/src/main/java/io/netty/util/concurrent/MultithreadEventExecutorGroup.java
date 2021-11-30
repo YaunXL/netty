@@ -70,23 +70,27 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      */
     protected MultithreadEventExecutorGroup(int nThreads, Executor executor,
                                             EventExecutorChooserFactory chooserFactory, Object... args) {
+        //检查线程个数参数是否为正数
         checkPositive(nThreads, "nThreads");
 
+        //使用默认线程执行器，使用默认线程工厂创建线程池
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
-
+        //初始化nThreads大小的eventExecutor数组
         children = new EventExecutor[nThreads];
 
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;
             try {
+                //初始化具体执行任务的eventloop
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
                 // TODO: Think about if this is a good exception type
                 throw new IllegalStateException("failed to create a child event loop", e);
             } finally {
+                //假如没有初始化成功，执行线程关闭操作，线程组一个没成功，整体都关闭
                 if (!success) {
                     for (int j = 0; j < i; j ++) {
                         children[j].shutdownGracefully();
@@ -110,6 +114,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 
         chooser = chooserFactory.newChooser(children);
 
+        //设置一个线程终止监听器，如果线程组都停止了，标志任务结束
         final FutureListener<Object> terminationListener = new FutureListener<Object>() {
             @Override
             public void operationComplete(Future<Object> future) throws Exception {
@@ -122,7 +127,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         for (EventExecutor e: children) {
             e.terminationFuture().addListener(terminationListener);
         }
-
+        //将eventexecutor数组转成hashset，返回不可变的set，提升查找效率
         Set<EventExecutor> childrenSet = new LinkedHashSet<EventExecutor>(children.length);
         Collections.addAll(childrenSet, children);
         readonlyChildren = Collections.unmodifiableSet(childrenSet);

@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * {@link Bootstrap} sub-class which allows easy bootstrap of {@link ServerChannel}
+ * 服务端启动子类
  *
  */
 public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerChannel> {
@@ -48,10 +49,15 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     // The order in which child ChannelOptions are applied is important they may depend on each other for validation
     // purposes.
+    //客户端channel连接配置
     private final Map<ChannelOption<?>, Object> childOptions = new LinkedHashMap<ChannelOption<?>, Object>();
+    //客户端连接属性
     private final Map<AttributeKey<?>, Object> childAttrs = new ConcurrentHashMap<AttributeKey<?>, Object>();
+    //服务端启动参数
     private final ServerBootstrapConfig config = new ServerBootstrapConfig(this);
+    //处理连接线程组
     private volatile EventLoopGroup childGroup;
+    //客户端连接处理handler
     private volatile ChannelHandler childHandler;
 
     public ServerBootstrap() { }
@@ -127,6 +133,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         return this;
     }
 
+    /***
+     * 初始化channel
+     * @param channel
+     */
     @Override
     void init(Channel channel) {
         setChannelOptions(channel, newOptionsArray(), logger);

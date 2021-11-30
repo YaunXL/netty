@@ -74,7 +74,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     };
 
     // Workaround for JDK NIO bug.
-    //
+    // 解决jdk nio bug
     // See:
     // - https://bugs.openjdk.java.net/browse/JDK-6427854 for first few dev (unreleased) builds of JDK 7
     // - https://bugs.openjdk.java.net/browse/JDK-6527572 for JDK prior to 5.0u15-rev and 6u10
