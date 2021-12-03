@@ -36,6 +36,9 @@ public interface EventExecutorChooserFactory {
 
         /**
          * Returns the new {@link EventExecutor} to use.
+         * 选取数组的线程，有2套策略
+         * 1、如果不是2的幂次方，使用求余的算法
+         * 2、如果是2的幂次方，使用位运算获取下一个EventLoop
          */
         EventExecutor next();
     }

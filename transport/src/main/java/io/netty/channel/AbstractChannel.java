@@ -464,6 +464,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
         @Override
         public final void register(EventLoop eventLoop, final ChannelPromise promise) {
             ObjectUtil.checkNotNull(eventLoop, "eventLoop");
+            /**
+             * 如果当前线程已经注册
+             */
             if (isRegistered()) {
                 promise.setFailure(new IllegalStateException("registered to an event loop already"));
                 return;
@@ -485,7 +488,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         public void run() {
                             register0(promise);
                         }
-                    });
+                    });//开启真正的异步，boss线程开始启动
                 } catch (Throwable t) {
                     logger.warn(
                             "Force-closing a channel whose registration task was not accepted by an event loop: {}",

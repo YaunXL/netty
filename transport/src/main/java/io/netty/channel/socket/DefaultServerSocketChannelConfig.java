@@ -46,6 +46,7 @@ public class DefaultServerSocketChannelConfig extends DefaultChannelConfig
 
     /**
      * Creates a new instance.
+     * 包装javaSocket类为netty的serverSocketChannel
      */
     public DefaultServerSocketChannelConfig(ServerSocketChannel channel, ServerSocket javaSocket) {
         super(channel, new ServerChannelRecvByteBufAllocator());

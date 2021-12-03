@@ -50,6 +50,7 @@ public final class DefaultChannelId implements ChannelId {
 
     /**
      * Returns a new {@link DefaultChannelId} instance.
+     * 创建channelId
      */
     public static DefaultChannelId newInstance() {
         return new DefaultChannelId();
@@ -158,6 +159,9 @@ public final class DefaultChannelId implements ChannelId {
     private transient String shortValue;
     private transient String longValue;
 
+    /**
+     * 生成一个唯一的channelId
+     */
     private DefaultChannelId() {
         data = new byte[MACHINE_ID.length + PROCESS_ID_LEN + SEQUENCE_LEN + TIMESTAMP_LEN + RANDOM_LEN];
         int i = 0;

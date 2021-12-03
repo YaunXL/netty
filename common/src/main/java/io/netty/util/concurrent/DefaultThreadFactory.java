@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A {@link ThreadFactory} implementation with a simple naming rule.
+ * netty默认线程工厂，自带简单的命名规则
  */
 public class DefaultThreadFactory implements ThreadFactory {
 
@@ -64,9 +65,14 @@ public class DefaultThreadFactory implements ThreadFactory {
         this(toPoolName(poolType), daemon, priority);
     }
 
+    /**
+     * 根据类名生产线程名字
+     * @param poolType
+     * @return
+     */
     public static String toPoolName(Class<?> poolType) {
         ObjectUtil.checkNotNull(poolType, "poolType");
-
+        //获取类名
         String poolName = StringUtil.simpleClassName(poolType);
         switch (poolName.length()) {
             case 0:
@@ -100,6 +106,11 @@ public class DefaultThreadFactory implements ThreadFactory {
         this(poolName, daemon, priority, null);
     }
 
+    /**
+     * 线程工厂创建线程
+     * @param r
+     * @return
+     */
     @Override
     public Thread newThread(Runnable r) {
         Thread t = newThread(FastThreadLocalRunnable.wrap(r), prefix + nextId.incrementAndGet());

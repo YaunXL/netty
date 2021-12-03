@@ -470,6 +470,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 } catch (IOException e) {
                     // If we receive an IOException here its because the Selector is messed up. Let's rebuild
                     // the selector and retry. https://github.com/netty/netty/issues/8566
+                    //假如selector破坏了，重新打开构建selector
                     rebuildSelector0();
                     selectCnt = 0;
                     handleLoopException(e);
@@ -579,10 +580,15 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * 处理关注事件
+     */
     private void processSelectedKeys() {
+        //优化后的selectedKeys是否为空
         if (selectedKeys != null) {
             processSelectedKeysOptimized();
         } else {
+            //原始处理
             processSelectedKeysPlain(selector.selectedKeys());
         }
     }
@@ -630,7 +636,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             if (!i.hasNext()) {
                 break;
             }
-
+            /**
+             * 判断是否应该再次轮询
+             * 每当256channel从Selector上移除时就标记needsToSelectAgain为true
+             */
             if (needsToSelectAgain) {
                 selectAgain();
                 selectedKeys = selector.selectedKeys();

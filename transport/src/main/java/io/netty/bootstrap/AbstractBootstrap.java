@@ -243,6 +243,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * Create a new {@link Channel} and bind it.
      */
     public ChannelFuture bind(int inetPort) {
+        //服务端绑定到ip和端口号
         return bind(new InetSocketAddress(inetPort));
     }
 
@@ -265,6 +266,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      */
     public ChannelFuture bind(SocketAddress localAddress) {
         validate();
+        //具体干活的方法
         return doBind(ObjectUtil.checkNotNull(localAddress, "localAddress"));
     }
 
@@ -305,11 +307,25 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    /**
+     * 初始化 NioServerSocketChannel 通道并注册各个 handler，返回一个 future。
+     * @return
+     */
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
-            //channel工厂反射创建NioServerSocketChannel
+            //channel工厂反射创建NioServerSocketChannel，具体实现在NioServerChannel类中
+            /**
+             * 1 调用了nio的SelectorProvider.provider().openServerSocketChannel(),打开一个channel
+             * 2 super(null, channel, SelectionKey.OP_ACCEPT);设置channel的注册事件为accpet，配置为非阻塞模式
+             *         this.readInterestOp = readInterestOp;
+             *         try {
+             *             ch.configureBlocking(false);
+             */
             channel = channelFactory.newChannel();
+            /**
+             * 初始化 channel,设置tcp属性，为pipeline添加handler
+             */
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -321,7 +337,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
-
+        //开始向selector注册channel，阻塞
         ChannelFuture regFuture = config().group().register(channel);
         if (regFuture.cause() != null) {
             if (channel.isRegistered()) {

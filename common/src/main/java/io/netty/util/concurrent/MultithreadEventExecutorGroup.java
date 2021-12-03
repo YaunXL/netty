@@ -73,17 +73,18 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         //检查线程个数参数是否为正数
         checkPositive(nThreads, "nThreads");
 
-        //使用默认线程执行器，使用默认线程工厂创建线程池
+        //创建线程executor，使用默认线程工厂创建线程
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
+        //孩子节点
         //初始化nThreads大小的eventExecutor数组
         children = new EventExecutor[nThreads];
 
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;
             try {
-                //初始化具体执行任务的eventloop
+                //初始化具体执行任务的eventloop，使用线程工厂创建并启动nThreads个数的线程
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
@@ -104,6 +105,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                             }
                         } catch (InterruptedException interrupted) {
                             // Let the caller handle the interruption.
+                            //调用者处理异常，即主线程处理中断异常
                             Thread.currentThread().interrupt();
                             break;
                         }
@@ -133,6 +135,10 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         readonlyChildren = Collections.unmodifiableSet(childrenSet);
     }
 
+    /**
+     * new一个默认的线程工厂
+     * @return
+     */
     protected ThreadFactory newDefaultThreadFactory() {
         return new DefaultThreadFactory(getClass());
     }
@@ -142,6 +148,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         return chooser.next();
     }
 
+    //迭代set集合
     @Override
     public Iterator<EventExecutor> iterator() {
         return readonlyChildren.iterator();
