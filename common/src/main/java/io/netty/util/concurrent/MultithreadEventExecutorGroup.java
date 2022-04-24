@@ -77,7 +77,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
-        //孩子节点
+
         //初始化nThreads大小的eventExecutor数组
         children = new EventExecutor[nThreads];
 
@@ -85,6 +85,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             boolean success = false;
             try {
                 //初始化具体执行任务的eventloop，使用线程工厂创建并启动nThreads个数的线程
+                //模版方法由具体子类实现，nio与epoll
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
@@ -114,6 +115,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             }
         }
 
+        //初始化线程选择器
         chooser = chooserFactory.newChooser(children);
 
         //设置一个线程终止监听器，如果线程组都停止了，标志任务结束

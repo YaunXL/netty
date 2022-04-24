@@ -150,10 +150,13 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     @Override
     protected int doReadMessages(List<Object> buf) throws Exception {
+        //最终调用jdk nio的serversocket.accept方法获得socketchannel
+        //不管有没有channel接入，都会立刻返回，默认最多获取16个
         SocketChannel ch = SocketUtils.accept(javaChannel());
 
         try {
             if (ch != null) {
+                //使用socket channel构建niosocketchannel,把接收的channel保存在list中
                 buf.add(new NioSocketChannel(this, ch));
                 return 1;
             }

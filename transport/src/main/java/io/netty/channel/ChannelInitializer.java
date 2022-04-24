@@ -62,6 +62,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
     /**
      * This method will be called once the {@link Channel} was registered. After the method returns this instance
      * will be removed from the {@link ChannelPipeline} of the {@link Channel}.
+     * channel初始化完成后该入站handler会从pipeline中移除
      *
      * @param ch            the {@link Channel} which was registered.
      * @throws Exception    is thrown if an error occurs. In that case it will be handled by

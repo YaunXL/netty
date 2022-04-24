@@ -50,8 +50,11 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(AbstractNioChannel.class);
 
+    //真正用到的nio channel 对jdk nio的包装
     private final SelectableChannel ch;
+    //监听感兴趣的事件
     protected final int readInterestOp;
+    //注册到selector后获取的key
     volatile SelectionKey selectionKey;
     boolean readPending;
     private final Runnable clearReadPendingRunnable = new Runnable() {
@@ -377,10 +380,17 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         boolean selected = false;
         for (;;) {
             try {
+                /**
+                 * 把Channel注册到其EventLoop线程的Selector上
+                 * 对于注册后返回的selectionKey,需要Channel感兴趣的事件
+                 */
                 selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
                 return;
             } catch (CancelledKeyException e) {
                 if (!selected) {
+                    //由于尚未调用select.select()
+                    //因此可能仍在缓存而未删除但已取消selctionKey
+                    //强制调用selector.selectNow()方法删除key
                     // Force the Selector to select now as the "canceled" SelectionKey may still be
                     // cached and not removed because no Select.select(..) operation was called yet.
                     eventLoop().selectNow();

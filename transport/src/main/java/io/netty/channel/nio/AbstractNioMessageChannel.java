@@ -77,6 +77,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                 try {
                     do {
                         int localRead = doReadMessages(readBuf);
+                        //等于0是没有接收
                         if (localRead == 0) {
                             break;
                         }
@@ -84,7 +85,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                             closed = true;
                             break;
                         }
-
+                        //增加accept的channel的个数
                         allocHandle.incMessagesRead(localRead);
                     } while (continueReading(allocHandle));
                 } catch (Throwable t) {

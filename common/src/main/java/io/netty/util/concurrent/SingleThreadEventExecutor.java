@@ -362,6 +362,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     /**
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.
      *
+     * 从任务队列中取出所有的任务并运行
      * @return {@code true} if and only if at least one task was run
      */
     protected boolean runAllTasks() {

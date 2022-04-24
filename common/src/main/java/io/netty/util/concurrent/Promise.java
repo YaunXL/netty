@@ -17,14 +17,18 @@ package io.netty.util.concurrent;
 
 /**
  * Special {@link Future} which is writable.
+ * promise接口，扩充了future接口
+ * 多了可以主动设置future任务操作结果的方法
  */
 public interface Promise<V> extends Future<V> {
 
     /**
      * Marks this future as a success and notifies all
      * listeners.
-     *
+     * 设置future执行成功，并赋予结果
+     * 参数为赋值结果
      * If it is success or failed already it will throw an {@link IllegalStateException}.
+     * 假如future已经成功或失败，抛出异常
      */
     Promise<V> setSuccess(V result);
 

@@ -78,17 +78,21 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
 
     /**
      * Returns the globally unique identifier of this {@link Channel}.
+     * channel全局唯一的id
      */
     ChannelId id();
 
     /**
      * Return the {@link EventLoop} this {@link Channel} was registered to.
+     * channel被注册到的eventloop线程
+     * 一个eventloop可能会被分配给多个channel
+     * 一个channel在生命周期内只注册在一个eventloop，也就是说channel的io操作都是由相同的Thread执行
      */
     EventLoop eventLoop();
 
     /**
      * Returns the parent of this channel.
-     *
+     * channel的父channel,假如没有则返回为空
      * @return the parent channel.
      *         {@code null} if this channel does not have a parent channel.
      */
@@ -96,6 +100,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
 
     /**
      * Returns the configuration of this channel.
+     * channel的配置
      */
     ChannelConfig config();
 
@@ -116,6 +121,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
 
     /**
      * Return the {@link ChannelMetadata} of the {@link Channel} which describe the nature of the {@link Channel}.
+     * channel的元数据，包括是否断开连接，每次最大可读消息数
      */
     ChannelMetadata metadata();
 

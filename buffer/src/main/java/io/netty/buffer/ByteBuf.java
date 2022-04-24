@@ -250,7 +250,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     /**
      * Returns the number of bytes (octets) this buffer can contain.
      */
-    public abstract int capacity();
+    public abstract int  capacity();
 
     /**
      * Adjusts the capacity of this buffer.  If the {@code newCapacity} is less than the current

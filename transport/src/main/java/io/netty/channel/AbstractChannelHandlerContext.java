@@ -361,6 +361,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     static void invokeChannelRead(final AbstractChannelHandlerContext next, Object msg) {
         final Object m = next.pipeline.touch(ObjectUtil.checkNotNull(msg, "msg"), next);
         EventExecutor executor = next.executor();
+        //这里需要判断下一个执行器是不是io线程，如果不是则切换线程执行任务
         if (executor.inEventLoop()) {
             next.invokeChannelRead(m);
         } else {
@@ -1089,6 +1090,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             }
         }
 
+        /**
+         * 帮助gc垃圾回收
+         */
         private void recycle() {
             // Set to null so the GC can collect them directly
             ctx = null;

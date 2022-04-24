@@ -70,6 +70,9 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
     int readerIndex;
     int writerIndex;
+    /**
+     * 标记读索引
+     */
     private int markedReaderIndex;
     private int markedWriterIndex;
     private int maxCapacity;
@@ -281,7 +284,12 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
+    //final方法不能重写，这样写的目的是防止子类重写这个烦烦烦
     final void ensureWritable0(int minWritableBytes) {
+        /**
+         * 1、获取当前写索引
+         * 2、计算写完当前数据需要的目标容量
+         */
         final int writerIndex = writerIndex();
         final int targetCapacity = writerIndex + minWritableBytes;
         // using non-short-circuit & to reduce branching - this is a hot path and targetCapacity should rarely overflow
@@ -297,6 +305,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
         }
 
         // Normalize the target capacity to the power of 2.
+        //将目标容量转成2的幂次方
         final int fastWritable = maxFastWritableBytes();
         int newCapacity = fastWritable >= minWritableBytes ? writerIndex + fastWritable
                 : alloc().calculateNewCapacity(targetCapacity, maxCapacity);
@@ -1070,6 +1079,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
     @Override
     public ByteBuf writeBytes(byte[] src, int srcIndex, int length) {
+        //确保可写，当容量不足时自动扩容
         ensureWritable(length);
         setBytes(writerIndex, src, srcIndex, length);
         writerIndex += length;
@@ -1448,6 +1458,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
     /**
      * Should be called by every method that tries to access the buffers content to check
      * if the buffer was released before.
+     * 检查当前内存是否释放
      */
     protected final void ensureAccessible() {
         if (checkAccessible && !isAccessible()) {

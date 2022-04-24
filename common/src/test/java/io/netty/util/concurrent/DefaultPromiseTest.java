@@ -153,6 +153,12 @@ public class DefaultPromiseTest {
         Object value = new Object();
         Promise<Object> promise = new DefaultPromise<Object>(executor);
         promise.setSuccess(value);
+        promise.addListener(new GenericFutureListener<Future<? super Object>>() {
+            @Override
+            public void operationComplete(Future<? super Object> future) throws Exception {
+                System.out.println("结果执行完成" + future.getNow());
+            }
+        });
         assertSame(value, promise.getNow());
     }
 

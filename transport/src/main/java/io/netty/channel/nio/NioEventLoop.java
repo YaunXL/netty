@@ -66,6 +66,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     private static final int MIN_PREMATURE_SELECTOR_RETURNS = 3;
     private static final int SELECTOR_AUTO_REBUILD_THRESHOLD;
 
+    /**
+     * 函数式编程，获取当前通道是否有事件就绪，大于0
+     */
     private final IntSupplier selectNowSupplier = new IntSupplier() {
         @Override
         public int get() throws Exception {
@@ -75,6 +78,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     // Workaround for JDK NIO bug.
     // 解决jdk nio bug
+    //解决jdk nio空轮询bug，空轮询次数大于512自动重建selector
     // See:
     // - https://bugs.openjdk.java.net/browse/JDK-6427854 for first few dev (unreleased) builds of JDK 7
     // - https://bugs.openjdk.java.net/browse/JDK-6527572 for JDK prior to 5.0u15-rev and 6u10
@@ -155,6 +159,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         return queueFactory.newTaskQueue(DEFAULT_MAX_PENDING_TASKS);
     }
 
+    /**
+     * 对jdk nio的selector进行包装；
+     * 可以选择对selector进行优化，主要是将hashset改为了组数，重写了add和iterator，提升效率
+     */
     private static final class SelectorTuple {
         final Selector unwrappedSelector;
         final Selector selector;
@@ -332,6 +340,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     /**
      * Returns the percentage of the desired amount of time spent for I/O in the event loop.
+     * 获取io事件在event loop中的占比
      */
     public int getIoRatio() {
         return ioRatio;
@@ -353,6 +362,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     /**
      * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s to work
      * around the infamous epoll 100% CPU bug.
+     * 重构selector，解决空轮询bug
      */
     public void rebuildSelector() {
         if (!inEventLoop()) {
@@ -434,6 +444,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * nio事件处理
+     */
     @Override
     protected void run() {
         int selectCnt = 0;
@@ -441,6 +454,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             try {
                 int strategy;
                 try {
+                    //队列没有任务执行，返回
+                    //
                     strategy = selectStrategy.calculateStrategy(selectNowSupplier, hasTasks());
                     switch (strategy) {
                     case SelectStrategy.CONTINUE:
@@ -449,6 +464,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     case SelectStrategy.BUSY_WAIT:
                         // fall-through to SELECT since the busy-wait is not supported with NIO
 
+                    //当前队列没有任务要执行
                     case SelectStrategy.SELECT:
                         long curDeadlineNanos = nextScheduledTaskDeadlineNanos();
                         if (curDeadlineNanos == -1L) {
@@ -456,6 +472,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         }
                         nextWakeupNanos.set(curDeadlineNanos);
                         try {
+                            //没有任务执行的时候，select阻塞到下一个任务的截止时间
                             if (!hasTasks()) {
                                 strategy = select(curDeadlineNanos);
                             }
@@ -483,12 +500,14 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 final int ioRatio = this.ioRatio;
                 boolean ranTasks;
                 if (ioRatio == 100) {
+                    //全部是io事件，不处理别的任务
                     try {
+                        //处理就绪的selectedkeys
                         if (strategy > 0) {
                             processSelectedKeys();
                         }
                     } finally {
-                        // Ensure we always run tasks.
+                        // Ensure we always run tasks. 确保所有任务运行完成
                         ranTasks = runAllTasks();
                     }
                 } else if (strategy > 0) {
@@ -497,6 +516,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
+                        //计算要给io任务分配的时间，超过时间后要释放线程给其他任务执行
                         final long ioTime = System.nanoTime() - ioStartTime;
                         ranTasks = runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
                     }
@@ -581,7 +601,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     /**
-     * 处理关注事件
+     * 处理就绪的selectedkeys
      */
     private void processSelectedKeys() {
         //优化后的selectedKeys是否为空
@@ -659,6 +679,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             final SelectionKey k = selectedKeys.keys[i];
             // null out entry in the array to allow to have it GC'ed once the Channel close
             // See https://github.com/netty/netty/issues/2363
+            //获取到key以后，把数组中对应的对象置null
             selectedKeys.keys[i] = null;
 
             final Object a = k.attachment();
@@ -674,8 +695,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             if (needsToSelectAgain) {
                 // null out entries in the array to allow to have it GC'ed once the Channel close
                 // See https://github.com/netty/netty/issues/2363
+                //把数组内容都清空，帮助GC
                 selectedKeys.reset(i + 1);
-
+                //重新select
                 selectAgain();
                 i = -1;
             }
@@ -687,6 +709,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         if (!k.isValid()) {
             final EventLoop eventLoop;
             try {
+                //获取到channel绑定的event loop
                 eventLoop = ch.eventLoop();
             } catch (Throwable ignored) {
                 // If the channel implementation throws an exception because there is no event loop, we ignore this
@@ -813,6 +836,11 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         return unwrappedSelector;
     }
 
+    /**
+     * 调用nio的selectNow方法,非阻塞select，如果当前没有就绪通道立即返回0；
+     * @return
+     * @throws IOException
+     */
     int selectNow() throws IOException {
         return selector.selectNow();
     }
