@@ -133,7 +133,8 @@ public class DefaultPromiseTest {
 
         @Override
         public void execute(Runnable command) {
-            fail("Cannot schedule commands");
+            command.run();
+//            fail("Cannot schedule commands");
         }
     }
 
@@ -153,13 +154,8 @@ public class DefaultPromiseTest {
         Object value = new Object();
         Promise<Object> promise = new DefaultPromise<Object>(executor);
         promise.setSuccess(value);
-        promise.addListener(new GenericFutureListener<Future<? super Object>>() {
-            @Override
-            public void operationComplete(Future<? super Object> future) throws Exception {
-                System.out.println("结果执行完成" + future.getNow());
-            }
-        });
         assertSame(value, promise.getNow());
+
     }
 
     @Test
@@ -247,6 +243,10 @@ public class DefaultPromiseTest {
         }
     }
 
+    /**
+     * 测试通知监听的顺序
+     * @throws Exception
+     */
     @Test
     public void testListenerNotifyOrder() throws Exception {
         EventExecutor executor = new TestEventExecutor();
@@ -254,6 +254,9 @@ public class DefaultPromiseTest {
             final BlockingQueue<FutureListener<Void>> listeners = new LinkedBlockingQueue<FutureListener<Void>>();
             int runs = 100000;
 
+            /**
+             * 循环添加
+             */
             for (int i = 0; i < runs; i++) {
                 final Promise<Void> promise = new DefaultPromise<Void>(executor);
                 final FutureListener<Void> listener1 = new FutureListener<Void>() {

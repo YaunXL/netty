@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * The result of an asynchronous operation.
  * 异步操作结果返回接收类，丰富了jdk的future类
+ *
  */
 @SuppressWarnings("ClassNameSameAsAncestorName")
 public interface Future<V> extends java.util.concurrent.Future<V> {
@@ -119,7 +120,6 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      *         the specified time limit
      *
      * @throws InterruptedException
-     *         if the current thread was interrupted
      */
     boolean await(long timeout, TimeUnit unit) throws InterruptedException;
 

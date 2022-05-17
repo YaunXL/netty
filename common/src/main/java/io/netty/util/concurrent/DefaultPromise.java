@@ -37,7 +37,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultPromise.class);
     private static final InternalLogger rejectedExecutionLogger =
             InternalLoggerFactory.getInstance(DefaultPromise.class.getName() + ".rejectedExecution");
-    //最大监听stack深度
+    //最大监听stack深度，默认是8
     private static final int MAX_LISTENER_STACK_DEPTH = Math.min(8,
             SystemPropertyUtil.getInt("io.netty.defaultPromise.maxListenerStackDepth", 8));
     @SuppressWarnings("rawtypes")
@@ -95,9 +95,11 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     @Override
     public Promise<V> setSuccess(V result) {
+        //如果设置结果成功，返回本身对象
         if (setSuccess0(result)) {
             return this;
         }
+        //设置不成功，则说明任务已经完成，抛出异常
         throw new IllegalStateException("complete already: " + this);
     }
 
@@ -448,6 +450,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     /**
      * Get the executor used to notify listeners when this promise is complete.
+     * 通知监听的线程
      * <p>
      * It is assumed this executor will protect against {@link StackOverflowError} exceptions.
      * The executor may be used to avoid {@link StackOverflowError} by executing a {@link Runnable} if the stack
@@ -489,9 +492,10 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         //首先判断是否是netty eventLoop线程
         EventExecutor executor = executor();
         if (executor.inEventLoop()) {
-            //内部threadlocalmap对象
+            //内部threadlocalmap对象,获取当前线程的threadLocalMap对象
             final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
             final int stackDepth = threadLocals.futureListenerStackDepth();
+            //比较最大监听栈深度，默认是8，
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
                 try {
@@ -503,6 +507,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             }
         }
 
+        /**
+         * 如果不是netty的eventloop线程，则直接在本线程提交一个新的任务执行通知监听
+         */
         safeExecute(executor, new Runnable() {
             @Override
             public void run() {
@@ -552,7 +559,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             listeners = this.listeners;
             this.listeners = null;
         }
-        //循环终止条件 listeners为空，通知wan
+        //循环终止条件 listeners为空，通知
+        System.out.println(Thread.currentThread().getName()+"listener:"+listeners);
         for (;;) {
             if (listeners instanceof DefaultFutureListeners) {
                 notifyListeners0((DefaultFutureListeners) listeners);
@@ -618,13 +626,18 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     /**
-     * cas的方式给future设置执行结果
+     * cas的方式给future设置执行结果，set结果成功需notify所有的监听
      * @param objResult
      * @return
      */
     private boolean setValue0(Object objResult) {
         if (RESULT_UPDATER.compareAndSet(this, null, objResult) ||
             RESULT_UPDATER.compareAndSet(this, UNCANCELLABLE, objResult)) {
+            /**
+             * 这里不是简单通知回调，有两步：
+             * 1、唤醒等待本任务的线程；
+             * 2、通知监听回调
+             */
             if (checkNotifyWaiters()) {
                 notifyListeners();
             }
@@ -634,6 +647,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     /**
+     * 检查是否有一些waiters，如果有则通知他们，包括等待线程和监听回调
      * Check if there are any waiters and if so notify these.
      * @return {@code true} if there are any listeners attached to the promise, {@code false} otherwise.
      */
